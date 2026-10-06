@@ -1,0 +1,252 @@
+<section class="space-y-4" *ngIf="order$ | async as order">
+  <!-- Barra de acciones rápidas superior -->
+  <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Orden Actual:</span>
+      <span class="font-mono text-sm font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">{{ order.orderNumber }}</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" (click)="reset()" class="text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Limpiar / Nueva
+      </button>
+      <button type="button" class="text-[11px] font-semibold text-sky-600 hover:bg-sky-50 px-2 py-1 rounded transition border border-sky-200">
+        Demo 1
+      </button>
+    </div>
+  </div>
+
+  <!-- CARD 1: Datos del Paciente -->
+  <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+        <span class="w-5 h-5 rounded bg-sky-100 text-sky-700 flex items-center justify-center text-xs">👤</span>
+        1. Datos del Paciente <span class="text-[11px] font-normal text-slate-400">(100% opcional y editable)</span>
+      </h2>
+      <button type="button" class="text-[11px] font-semibold text-sky-600 hover:underline">
+        🔍 Autocompletar por Cédula
+      </button>
+    </div>
+
+    <!-- Ensure patient is typed properly for ngModel -->
+    <ng-container *ngIf="$any(order.patient) as patient">
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <div class="sm:col-span-4">
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">Cédula / Documento</label>
+          <input type="text" placeholder="Ej: 1020492811" [ngModel]="patient.documento" (ngModelChange)="onPatientChange('documento', $event)" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+        </div>
+
+        <div class="sm:col-span-8">
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nombre Completo</label>
+          <input type="text" placeholder="Ej: Mariana Rodríguez Peña" [ngModel]="patient.nombreCompleto" (ngModelChange)="onPatientChange('nombreCompleto', $event)" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+        </div>
+
+        <div class="sm:col-span-5">
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">WhatsApp / Teléfono</label>
+          <input type="tel" placeholder="Ej: 3105559876" [ngModel]="patient.telefono" (ngModelChange)="onPatientChange('telefono', $event)" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+        </div>
+
+        <div class="sm:col-span-3">
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">Edad</label>
+          <input type="text" placeholder="Ej: 34 años" [ngModel]="patient.edad" (ngModelChange)="onPatientChange('edad', $event)" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+        </div>
+
+        <div class="sm:col-span-4">
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">Fecha Emisión</label>
+          <input type="date" [ngModel]="order.createdAt | date:'yyyy-MM-dd'" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- CARD 2: Fórmula Optométrica -->
+  <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+        <span class="w-5 h-5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">👁️</span>
+        2. Graduación Optométrica (RX)
+      </h2>
+      <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono">Signos (+/-) opcionales</span>
+    </div>
+
+    <!-- Tabla interactiva OD / OI -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs border border-slate-200 rounded-lg overflow-hidden">
+        <thead>
+          <tr class="bg-slate-50 text-slate-600 text-[11px] uppercase font-bold text-center">
+            <th class="p-2 border-r border-b border-slate-200 w-16">Ojo</th>
+            <th class="p-2 border-r border-b border-slate-200">Esfera</th>
+            <th class="p-2 border-r border-b border-slate-200">Cilindro</th>
+            <th class="p-2 border-r border-b border-slate-200">Eje</th>
+            <th class="p-2 border-r border-b border-slate-200">Adición</th>
+            <th class="p-2 border-b border-slate-200">DP (mm)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Ojo Derecho -->
+          <tr class="bg-sky-50/40 hover:bg-sky-50/70 transition">
+            <td class="p-2 font-black text-sky-800 border-r border-b border-slate-200 text-center bg-sky-100/60">OD</td>
+            <td class="p-1 border-r border-b border-slate-200">
+              <input type="text" placeholder="-1.50" [ngModel]="order.formula.od?.esfera" (ngModelChange)="onFormulaChange('od', 'esfera', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+            <td class="p-1 border-r border-b border-slate-200">
+              <input type="text" placeholder="-0.75" [ngModel]="order.formula.od?.cilindro" (ngModelChange)="onFormulaChange('od', 'cilindro', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+            <td class="p-1 border-r border-b border-slate-200">
+              <input type="text" placeholder="180°" [ngModel]="order.formula.od?.eje" (ngModelChange)="onFormulaChange('od', 'eje', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+            <td class="p-1 border-r border-b border-slate-200">
+              <input type="text" placeholder="+1.75" [ngModel]="order.formula.od?.adicion" (ngModelChange)="onFormulaChange('od', 'adicion', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+            <td class="p-1 border-b border-slate-200">
+              <input type="text" placeholder="32" [ngModel]="order.formula.od?.dp" (ngModelChange)="onFormulaChange('od', 'dp', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+          </tr>
+          <!-- Ojo Izquierdo -->
+          <tr class="bg-white hover:bg-slate-50 transition">
+            <td class="p-2 font-black text-slate-800 border-r border-slate-200 text-center bg-slate-100">OI</td>
+            <td class="p-1 border-r border-slate-200">
+              <input type="text" placeholder="-1.25" [ngModel]="order.formula.oi?.esfera" (ngModelChange)="onFormulaChange('oi', 'esfera', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+            <td class="p-1 border-r border-slate-200">
+              <input type="text" placeholder="-0.50" [ngModel]="order.formula.oi?.cilindro" (ngModelChange)="onFormulaChange('oi', 'cilindro', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+            <td class="p-1 border-r border-slate-200">
+              <input type="text" placeholder="175°" [ngModel]="order.formula.oi?.eje" (ngModelChange)="onFormulaChange('oi', 'eje', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+            <td class="p-1 border-r border-slate-200">
+              <input type="text" placeholder="+1.75" [ngModel]="order.formula.oi?.adicion" (ngModelChange)="onFormulaChange('oi', 'adicion', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+            <td class="p-1">
+              <input type="text" placeholder="31" [ngModel]="order.formula.oi?.dp" (ngModelChange)="onFormulaChange('oi', 'dp', $event)" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Distancia Pupilar Total / Altura</label>
+        <input type="text" placeholder="Ej: D.P. 63 mm | Altura 18 mm" [ngModel]="order.formula.dpTotal" (ngModelChange)="onFormulaGeneralChange('dpTotal', $event)" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Uso Recomendado</label>
+        <select [ngModel]="order.formula.uso" (ngModelChange)="onFormulaGeneralChange('uso', $event)" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 outline-none">
+          <option value="Visión Lejana / Permanente">Visión Lejana / Permanente</option>
+          <option value="Lectura / Visión Próxima">Lectura / Visión Próxima</option>
+          <option value="Progresivo (Cerca, Media y Lejana)">Progresivo (Cerca, Media y Lejana)</option>
+          <option value="Ocupacional / Pantallas y Oficina">Ocupacional / Pantallas y Oficina</option>
+          <option value="Protección Solar Graduada">Protección Solar Graduada</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD 3: Montura, Lentes y Observaciones -->
+  <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="w-5 h-5 rounded bg-amber-100 text-amber-700 flex items-center justify-center text-xs">🕶️</span>
+      3. Montura, Tipo de Lente y Tratamientos
+    </h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Referencia Montura / Marca</label>
+        <input type="text" placeholder="Ej: Acetato Ray-Ban 5154 Carey" [ngModel]="order.productos.montura" (ngModelChange)="onProductosChange('montura', $event)" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tipo de Lente y Material</label>
+        <input type="text" placeholder="Ej: Policarbonato Antirreflejo Blue Block" [ngModel]="order.productos.lente" (ngModelChange)="onProductosChange('lente', $event)" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+
+      <div class="sm:col-span-2">
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Observaciones / Indicaciones Especiales</label>
+        <textarea rows="2" placeholder="Ej: Adaptación de lentes en 5 días hábiles." [ngModel]="order.productos.observaciones" (ngModelChange)="onProductosChange('observaciones', $event)" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD 4: Precios, Abonos y Saldos -->
+  <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2 border-b border-slate-100 pb-2">
+      <span class="w-5 h-5 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs">💵</span>
+      4. Facturación, Abonos y Liquidación
+    </h2>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Montura ($)</label>
+        <input type="number" min="0" [ngModel]="order.precios.valorMontura" (ngModelChange)="onPreciosChange('valorMontura', $event)" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Lentes / Cristales ($)</label>
+        <input type="number" min="0" [ngModel]="order.precios.valorLentes" (ngModelChange)="onPreciosChange('valorLentes', $event)" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Consulta / Otros ($)</label>
+        <input type="number" min="0" [ngModel]="order.precios.valorOtros" (ngModelChange)="onPreciosChange('valorOtros', $event)" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Descuento ($)</label>
+        <input type="number" min="0" [ngModel]="order.precios.descuento" (ngModelChange)="onPreciosChange('descuento', $event)" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none text-rose-600">
+      </div>
+    </div>
+
+    <!-- Totales consolidados con Abono y Saldo -->
+    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+      <div>
+        <label class="block text-[10px] uppercase font-bold text-slate-500">Total Venta</label>
+        <div class="font-mono text-base font-extrabold text-slate-800">{{ order.precios.totalVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</div>
+      </div>
+
+      <div>
+        <label class="block text-[10px] uppercase font-bold text-slate-500">Abono / Anticipo ($)</label>
+        <input type="number" min="0" [ngModel]="order.precios.abono" (ngModelChange)="onPreciosChange('abono', $event)" class="w-full text-xs font-mono font-bold p-1.5 border border-emerald-300 bg-emerald-50/50 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-800">
+      </div>
+
+      <div>
+        <label class="block text-[10px] uppercase font-bold text-slate-500">Saldo Pendiente</label>
+        <div class="font-mono text-base font-black text-rose-600">{{ order.precios.saldo | currency:'COP':'symbol-narrow':'1.0-0' }}</div>
+      </div>
+
+      <div>
+        <label class="block text-[10px] uppercase font-bold text-slate-500">Método de Pago</label>
+        <select [ngModel]="order.precios.metodoPago" (ngModelChange)="onMetodoPagoChange($event)" class="w-full text-xs p-1.5 border border-slate-300 rounded-lg bg-white">
+          <option value="Efectivo">Efectivo</option>
+          <option value="Transferencia / Nequi / Daviplata">Transferencia / QR</option>
+          <option value="Tarjeta Débito/Crédito">Tarjeta Débito/Crédito</option>
+          <option value="Mixto">Mixto</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA DE ACCIÓN PRINCIPAL (GUARDAR, IMPRIMIR, WHATSAPP) -->
+  <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-md flex flex-wrap gap-2 items-center justify-between">
+    <div class="flex items-center gap-2">
+      <button type="button" (click)="saveOrder()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm hover:shadow flex items-center gap-2 transition active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        Guardar Venta y Paciente
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Botón WhatsApp -->
+      <button type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-3.5 rounded-lg shadow-sm hover:shadow flex items-center gap-2 transition active:scale-95">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.54 1.768.809 2.796.809 3.179 0 5.766-2.587 5.767-5.766.002-3.18-2.585-5.796-5.767-5.796zm3.385 8.163c-.145.411-.85.764-1.177.808-.316.044-.725.074-2.373-.609-1.996-.826-3.266-2.852-3.365-2.986-.1-.133-.809-1.076-.809-2.052 0-.975.511-1.455.694-1.654.183-.199.398-.249.531-.249.133 0 .266.002.383.007.123.006.289-.046.452.347.166.399.565 1.381.614 1.481.05.1.083.216.017.349-.067.133-.1.216-.199.332-.1.116-.21.26-.299.349-.1.1-.205.209-.089.409.117.199.519.856 1.113 1.384.767.682 1.413.894 1.613.993.2.1.316.083.433-.05.116-.133.499-.581.632-.78.133-.2.266-.166.449-.1.183.067 1.164.549 1.363.649.2.1.332.149.382.233.05.083.05.482-.095.893z"/></svg>
+        WhatsApp
+      </button>
+
+      <!-- Botón Imprimir Media Carta -->
+      <button type="button" class="bg-slate-900 hover:bg-black text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm hover:shadow flex items-center gap-2 transition active:scale-95">
+        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        Imprimir Media Carta
+      </button>
+    </div>
+  </div>
+</section>

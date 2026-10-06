@@ -1,0 +1,175 @@
+<ng-container *ngIf="order$ | async as order">
+  <div id="receipt-wrapper" class="flex flex-col items-center">
+    <!-- Barra superior informativa (no print) -->
+    <div class="no-print w-full flex items-center justify-between pb-2 px-1 text-xs text-slate-500">
+      <span class="font-bold uppercase tracking-wider flex items-center gap-1.5 text-slate-600">
+        <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+        Vista Media Carta (140 x 216 mm)
+      </span>
+      <button type="button" (click)="print()" class="text-sky-600 font-semibold hover:underline">
+        Imprimir ahora 🖨️
+      </button>
+    </div>
+
+    <!-- Tarjeta física que replica exactamente la hoja Media Carta -->
+    <div id="invoice-card" class="bg-white text-slate-900 border border-slate-300 rounded-xl shadow-lg p-5 w-full max-w-md select-text relative font-sans text-[11px] leading-tight">
+
+      <!-- Encabezado de la Óptica -->
+      <div class="border-b-2 border-slate-900 pb-2 mb-2">
+        <div class="flex justify-between items-start gap-2">
+          <div>
+            <h2 class="font-extrabold text-sm uppercase tracking-tight text-slate-900">ÓPTICA VISIÓN CLARA</h2>
+            <p class="text-[9px] text-slate-600">NIT/RUT: 900.482.910-3 • Régimen Simplificado</p>
+            <p class="text-[10px] font-medium text-slate-700">Dr. Leonardo Ramos - Optómetra ULS (Reg. 84920)</p>
+            <p class="text-[9px] text-slate-500">Carrera 15 # 85-32, Consultorio 302 • Tel: (601) 745-8900</p>
+          </div>
+          <div class="text-right flex flex-col items-end">
+            <span class="bg-slate-900 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded">ORDEN DE TRABAJO</span>
+            <span class="font-mono font-black text-sm text-sky-800 mt-1">{{ order.orderNumber }}</span>
+            <span class="text-[9px] text-slate-500 mt-0.5">{{ order.createdAt | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuadro Resumen Paciente -->
+      <!-- Usa $any(order.patient) porque sabemos que no es un string sino un Patient -->
+      <div class="bg-slate-50 rounded p-2 mb-2 border border-slate-200">
+        <div class="grid grid-cols-12 gap-1 text-[10px]">
+          <div class="col-span-8">
+            <span class="text-slate-500 font-semibold">Paciente:</span>
+            <span class="font-bold text-slate-900 ml-1">{{ $any(order.patient).nombreCompleto || 'N/A' }}</span>
+          </div>
+          <div class="col-span-4 text-right">
+            <span class="text-slate-500 font-semibold">Edad:</span>
+            <span class="font-bold text-slate-900 ml-1">{{ $any(order.patient).edad || 'N/A' }}</span>
+          </div>
+          <div class="col-span-7">
+            <span class="text-slate-500 font-semibold">Cédula:</span>
+            <span class="font-mono font-bold text-slate-900 ml-1">{{ $any(order.patient).documento || 'N/A' }}</span>
+          </div>
+          <div class="col-span-5 text-right">
+            <span class="text-slate-500 font-semibold">WhatsApp:</span>
+            <span class="font-bold text-slate-900 ml-1">{{ $any(order.patient).telefono || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla Fórmula Óptica -->
+      <div class="mb-2">
+        <div class="flex justify-between items-center mb-0.5">
+          <span class="font-extrabold text-[9px] uppercase tracking-wider text-slate-700">Fórmula Optométrica (RX)</span>
+          <span class="text-[9px] font-medium text-slate-500 italic">{{ order.formula.uso }}</span>
+        </div>
+        <table class="w-full text-center border-collapse border border-slate-300 text-[10px]">
+          <thead>
+            <tr class="bg-slate-100 font-bold text-slate-700">
+              <th class="border border-slate-300 py-0.5 px-1 w-8">OJO</th>
+              <th class="border border-slate-300 py-0.5 px-1">ESF</th>
+              <th class="border border-slate-300 py-0.5 px-1">CIL</th>
+              <th class="border border-slate-300 py-0.5 px-1">EJE</th>
+              <th class="border border-slate-300 py-0.5 px-1">ADD</th>
+              <th class="border border-slate-300 py-0.5 px-1">DP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border border-slate-300 font-black bg-slate-50 py-0.5">OD</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.od?.esfera || '-' }}</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.od?.cilindro || '-' }}</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.od?.eje || '-' }}</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.od?.adicion || '-' }}</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.od?.dp || '-' }}</td>
+            </tr>
+            <tr>
+              <td class="border border-slate-300 font-black bg-slate-50 py-0.5">OI</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.oi?.esfera || '-' }}</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.oi?.cilindro || '-' }}</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.oi?.eje || '-' }}</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.oi?.adicion || '-' }}</td>
+              <td class="border border-slate-300 font-mono py-0.5 font-semibold">{{ order.formula.oi?.dp || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="text-[9px] text-slate-600 mt-0.5 text-right font-medium">
+          <span>D.P. Total: {{ order.formula.dpTotal || 'N/A' }}</span>
+        </div>
+      </div>
+
+      <!-- Detalle de Producto / Montura / Lente -->
+      <div class="border border-slate-200 rounded p-2 mb-2 bg-white space-y-1 text-[10px]">
+        <div class="flex justify-between items-start border-b border-slate-100 pb-1">
+          <span class="text-slate-500 font-medium">Montura:</span>
+          <span class="font-bold text-slate-900 text-right">{{ order.productos.montura || 'N/A' }}</span>
+        </div>
+        <div class="flex justify-between items-start border-b border-slate-100 pb-1">
+          <span class="text-slate-500 font-medium">Lentes / Tratamiento:</span>
+          <span class="font-bold text-slate-900 text-right">{{ order.productos.lente || 'N/A' }}</span>
+        </div>
+        <div class="text-[9px] text-slate-600 pt-0.5">
+          <span class="font-semibold text-slate-500">Notas:</span>
+          <span>{{ order.productos.observaciones || 'Ninguna.' }}</span>
+        </div>
+      </div>
+
+      <!-- Desglose Económico y Saldos -->
+      <div class="bg-slate-50 rounded border border-slate-300 p-2 mb-2 text-[10px]">
+        <div class="grid grid-cols-2 gap-x-2 gap-y-1">
+          <div class="flex justify-between">
+            <span class="text-slate-600">Montura:</span>
+            <span class="font-mono font-medium">{{ order.precios.valorMontura | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Lentes:</span>
+            <span class="font-mono font-medium">{{ order.precios.valorLentes | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Examen / Otros:</span>
+            <span class="font-mono font-medium">{{ order.precios.valorOtros | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Descuento:</span>
+            <span class="font-mono font-medium text-rose-600">-{{ order.precios.descuento | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-300 mt-1.5 pt-1.5 flex justify-between items-center text-[11px]">
+          <span class="font-bold text-slate-700">VALOR TOTAL:</span>
+          <span class="font-mono font-extrabold text-slate-900 text-xs">{{ order.precios.totalVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+        </div>
+
+        <div class="flex justify-between items-center text-[11px] text-emerald-700">
+          <span class="font-semibold">Abono Inicial:</span>
+          <span class="font-mono font-bold">{{ order.precios.abono | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+        </div>
+
+        <!-- SALDO DESTACADO -->
+        <div class="border-t-2 border-slate-900 mt-1 pt-1 flex justify-between items-center bg-amber-50 p-1 rounded">
+          <div class="flex flex-col">
+            <span class="font-black text-rose-700 uppercase tracking-tight text-[11px]">SALDO PENDIENTE:</span>
+            <span class="text-[8px] text-slate-500 font-medium">Pago: {{ order.precios.metodoPago }}</span>
+          </div>
+          <span class="font-mono font-black text-sm text-rose-600">{{ order.precios.saldo | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <!-- Términos de Entrega & Firmas -->
+      <div class="mt-2 text-[8px] text-slate-500 leading-tight">
+        <p class="text-center font-medium">
+          * Garantía de adaptación de 30 días calendario sobre fórmula. Toda orden debe estar cancelada al momento de entrega física de los lentes.
+        </p>
+
+        <div class="grid grid-cols-2 gap-4 mt-6 pt-2">
+          <div class="border-t border-slate-400 text-center">
+            <p class="font-bold text-slate-700">Firma Profesional</p>
+            <p class="text-[7.5px] text-slate-400">Optometría y Control</p>
+          </div>
+          <div class="border-t border-slate-400 text-center">
+            <p class="font-bold text-slate-700">Firma Paciente / Recibido</p>
+            <p class="text-[7.5px] text-slate-400">Aceptación y Retiro</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</ng-container>
