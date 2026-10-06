@@ -3,14 +3,23 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Patient } from '../interfaces/patient.interface';
 import { Order } from '../interfaces/order.interface';
+import { SettingsService } from './settings.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://192.168.1.18:3000'; // URL por defecto de NestJS (Cambiada a IP local)
+  // La URL del backend ahora se toma de Configuración (botón ⚙️ del header)
+  private get apiUrl(): string {
+    return this.settings.value.apiUrl;
+  }
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private settings: SettingsService) {}
+
+  // --- Health ---
+  ping(url?: string): Observable<any> {
+    return this.http.get((url || this.apiUrl).replace(/\/+$/, '') + '/', { responseType: 'text' });
+  }
 
   // --- Patients ---
   getPatients(): Observable<Patient[]> {
@@ -40,5 +49,9 @@ export class ApiService {
 
   createOrder(order: Order): Observable<Order> {
     return this.http.post<Order>(`${this.apiUrl}/orders`, order);
+  }
+
+  deleteOrder(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/orders/${id}`);
   }
 }

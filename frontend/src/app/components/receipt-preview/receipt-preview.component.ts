@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OrderStateService } from '../../services/order-state.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-receipt-preview',
@@ -11,8 +12,9 @@ import { OrderStateService } from '../../services/order-state.service';
 })
 export class ReceiptPreviewComponent implements OnInit {
   order$ = this.orderState.currentOrder$;
+  settings$ = this.settingsService.settings$;
 
-  constructor(private orderState: OrderStateService) {}
+  constructor(private orderState: OrderStateService, private settingsService: SettingsService) {}
 
   ngOnInit() {}
 

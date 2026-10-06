@@ -20,7 +20,11 @@ let OrdersService = class OrdersService {
         this.orderRepository = orderRepository;
     }
     create(createOrderDto) {
-        const order = this.orderRepository.create(createOrderDto);
+        const { id: _id, createdAt: _c, updatedAt: _u, patient, ...data } = createOrderDto || {};
+        const order = this.orderRepository.create({
+            ...data,
+            patient: typeof patient === 'string' ? { id: patient } : patient?.id ? { id: patient.id } : undefined,
+        });
         return this.orderRepository.save(order);
     }
     findAll() {

@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Patient } from './entities/patient.entity.js';
@@ -29,11 +29,17 @@ let PatientsService = class PatientsService {
     findOne(id) {
         return this.patientRepository.findOne({ where: { id }, relations: { orders: true } });
     }
-    findByDocument(documento) {
-        return this.patientRepository.findOne({ where: { documento }, relations: { orders: true } });
+    async findByDocument(documento) {
+        const patient = await this.patientRepository.findOne({ where: { documento }, relations: { orders: true } });
+        if (!patient) {
+            throw new NotFoundException(`Paciente con documento ${documento} no encontrado`);
+        }
+        return patient;
     }
-    update(id, updatePatientDto) {
-        return this.patientRepository.update(id, updatePatientDto);
+    async update(id, updatePatientDto) {
+        const { id: _id, orders: _orders, createdAt: _c, updatedAt: _u, ...data } = updatePatientDto || {};
+        await this.patientRepository.update(id, data);
+        return this.patientRepository.findOne({ where: { id } });
     }
     remove(id) {
         return this.patientRepository.delete(id);

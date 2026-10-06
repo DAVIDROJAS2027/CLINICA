@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { Order, FormulaOptometrica, ProductosOrden, PreciosOrden } from '../interfaces/order.interface';
 import { Patient } from '../interfaces/patient.interface';
 
@@ -106,5 +106,31 @@ export class OrderStateService {
       ...this.initialState,
       orderNumber: `ORD-${Math.floor(1000 + Math.random() * 9000)}`
     });
+  }
+
+  /** Carga una orden guardada (desde Historial) en el formulario y la vista previa */
+  loadOrder(order: Order) {
+    const patient = typeof order.patient === 'object' && order.patient
+      ? { ...this.initialPatient, ...order.patient }
+      : { ...this.initialPatient };
+    this.orderStateSource.next({
+      ...order,
+      patient,
+      formula: {
+        ...this.initialFormula,
+        ...order.formula,
+        od: { ...this.initialFormula.od, ...(order.formula?.od || {}) },
+        oi: { ...this.initialFormula.oi, ...(order.formula?.oi || {}) },
+      },
+      productos: { ...this.initialProductos, ...order.productos },
+      precios: { ...this.initialPrecios, ...order.precios },
+    });
+  }
+
+  /** Notifica que se guardó una orden (para refrescar contador del historial) */
+  private orderSavedSource = new Subject<void>();
+  orderSaved$ = this.orderSavedSource.asObservable();
+  notifyOrderSaved() {
+    this.orderSavedSource.next();
   }
 }

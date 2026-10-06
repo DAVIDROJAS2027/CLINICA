@@ -6,7 +6,7 @@ export declare class PatientsService {
     create(createPatientDto: any): Promise<Patient[]>;
     findAll(): Promise<Patient[]>;
     findOne(id: string): Promise<Patient | null>;
-    findByDocument(documento: string): Promise<Patient | null>;
-    update(id: string, updatePatientDto: any): Promise<import("typeorm").UpdateResult>;
+    findByDocument(documento: string): Promise<Patient>;
+    update(id: string, updatePatientDto: any): Promise<Patient | null>;
     remove(id: string): Promise<import("typeorm").DeleteResult>;
 }

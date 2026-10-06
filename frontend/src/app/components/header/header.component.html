@@ -1,39 +1,169 @@
-<header class="no-print bg-slate-900 text-white border-b border-slate-800 shadow-md sticky top-0 z-30">
-  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+<header class="no-print bg-slate-900 text-white border-b border-slate-800 shadow-md safe-top">
+  <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
     <!-- Marca / Logo -->
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30 text-white font-black text-xl">
+    <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+      <div class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30 text-white font-black text-lg sm:text-xl">
         👓
       </div>
-      <div>
-        <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-          Óptica Visión Clásica
-          <span class="text-[10px] bg-sky-500/20 text-sky-300 font-mono px-2 py-0.5 rounded-full border border-sky-400/30">v2.5 Media Carta</span>
+      <div class="min-w-0">
+        <h1 class="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-2 min-w-0">
+          <span class="truncate">{{ (settings$ | async)?.nombreOptica }}</span>
+          <span class="hidden md:inline text-[10px] bg-sky-500/20 text-sky-300 font-mono px-2 py-0.5 rounded-full border border-sky-400/30 shrink-0">v2.5 Media Carta</span>
         </h1>
-        <p class="text-xs text-slate-400">Consultorio Optométrico & Facturación Rápida</p>
+        <p class="hidden sm:block text-xs text-slate-400 truncate">Consultorio Optométrico &amp; Facturación Rápida</p>
+        <p class="sm:hidden text-[11px] text-slate-400 truncate">{{ (settings$ | async)?.doctorNombre }}</p>
       </div>
     </div>
 
     <!-- Datos del Admin Activo & Navegación -->
-    <div class="flex items-center gap-2 sm:gap-3">
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
       <!-- Indicador de Doctor Activo -->
-      <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs">
+      <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span class="text-slate-400">Atendiendo:</span>
-        <span id="header-doctor-name" class="font-semibold text-slate-200">Dr. Leonardo Ramos</span>
+        <span id="header-doctor-name" class="font-semibold text-slate-200">{{ (settings$ | async)?.doctorNombre }}</span>
       </div>
 
       <!-- Botón Historial -->
-      <button class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition">
+      <button id="btn-historial" type="button" (click)="openHistory()" title="Historial de pacientes" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition">
         <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Historial Pacientes
-        <span id="badge-total-orders" class="ml-1 bg-sky-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+        <span class="hidden sm:inline">Historial Pacientes</span>
+        <span id="badge-total-orders" class="sm:ml-1 bg-sky-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none">{{ orders.length }}</span>
       </button>
 
       <!-- Botón Admin / Ajustes -->
-      <button title="Configuración del Doctor y Óptica" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition">
+      <button id="btn-configuracion" type="button" (click)="openSettings()" title="Configuración del Doctor y Óptica" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       </button>
     </div>
   </div>
 </header>
+
+<!-- ===================== MODAL CONFIGURACIÓN ===================== -->
+<div *ngIf="showSettings" class="no-print fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-950/70 backdrop-blur-sm" (click)="closeSettings()">
+  <div class="bg-white text-slate-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto overscroll-contain safe-bottom" (click)="$event.stopPropagation()">
+    <div class="sticky top-0 bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between rounded-t-2xl">
+      <div>
+        <h2 class="text-base font-bold">⚙️ Configuración del Doctor y Óptica</h2>
+        <p class="text-xs text-slate-500">Estos datos aparecen en el encabezado, la orden impresa y WhatsApp.</p>
+      </div>
+      <button id="btn-cerrar-config" type="button" (click)="closeSettings()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500 text-lg">✕</button>
+    </div>
+
+    <div class="p-5 space-y-5 text-xs">
+      <!-- Óptica -->
+      <section>
+        <h3 class="font-bold uppercase tracking-wider text-[11px] text-sky-700 mb-2">Datos de la Óptica</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label class="flex flex-col gap-1">Nombre de la óptica *
+            <input id="cfg-nombre-optica" [(ngModel)]="draft.nombreOptica" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+          <label class="flex flex-col gap-1">NIT / RUT
+            <input id="cfg-nit" [(ngModel)]="draft.nit" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+          <label class="flex flex-col gap-1">Dirección
+            <input id="cfg-direccion" [(ngModel)]="draft.direccion" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+          <label class="flex flex-col gap-1">Teléfono
+            <input id="cfg-telefono" [(ngModel)]="draft.telefono" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+        </div>
+      </section>
+
+      <!-- Doctor -->
+      <section>
+        <h3 class="font-bold uppercase tracking-wider text-[11px] text-sky-700 mb-2">Profesional</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label class="flex flex-col gap-1">Nombre del doctor *
+            <input id="cfg-doctor" [(ngModel)]="draft.doctorNombre" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+          <label class="flex flex-col gap-1">Profesión / Universidad
+            <input id="cfg-profesion" [(ngModel)]="draft.doctorProfesion" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+          <label class="flex flex-col gap-1">Registro profesional
+            <input id="cfg-registro" [(ngModel)]="draft.doctorRegistro" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+        </div>
+      </section>
+
+      <!-- Impresión -->
+      <section>
+        <h3 class="font-bold uppercase tracking-wider text-[11px] text-sky-700 mb-2">Texto de garantía (orden impresa)</h3>
+        <textarea id="cfg-garantia" rows="3" [(ngModel)]="draft.garantia" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none"></textarea>
+      </section>
+
+      <!-- Sistema -->
+      <section>
+        <h3 class="font-bold uppercase tracking-wider text-[11px] text-sky-700 mb-2">Sistema</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <label class="flex flex-col gap-1 sm:col-span-3">URL del servidor (backend)
+            <input id="cfg-api-url" [(ngModel)]="draft.apiUrl" placeholder="http://192.168.1.18:3000" class="border border-slate-300 rounded-lg px-3 py-2 font-mono focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+          <label class="flex flex-col gap-1">Indicativo WhatsApp
+            <input id="cfg-indicativo" [(ngModel)]="draft.indicativoWhatsapp" class="border border-slate-300 rounded-lg px-3 py-2 font-mono focus:ring-2 focus:ring-sky-500 outline-none" />
+          </label>
+        </div>
+        <div class="flex items-center gap-3 mt-2">
+          <button id="btn-probar-conexion" type="button" (click)="testConnection()" class="px-3 py-1.5 rounded-lg border border-sky-300 text-sky-700 font-semibold hover:bg-sky-50 transition">
+            Probar conexión
+          </button>
+          <span *ngIf="testStatus === 'testing'" class="text-slate-500">Probando…</span>
+          <span *ngIf="testStatus === 'ok'" class="text-emerald-600 font-semibold">✔ Servidor conectado</span>
+          <span *ngIf="testStatus === 'fail'" class="text-rose-600 font-semibold">✖ No responde. Verifique IP, puerto y que el backend esté encendido.</span>
+        </div>
+      </section>
+    </div>
+
+    <div class="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-5 py-3 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 sm:rounded-b-2xl">
+      <button id="btn-restaurar-config" type="button" (click)="restoreDefaults()" class="text-xs font-semibold text-rose-600 hover:underline py-2 sm:py-0">Restaurar valores de fábrica</button>
+      <div class="grid grid-cols-2 sm:flex gap-2">
+        <button id="btn-cancelar-config" type="button" (click)="closeSettings()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 transition">Cancelar</button>
+        <button id="btn-guardar-config" type="button" (click)="saveSettings()" class="px-4 py-2 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow transition active:scale-95">💾 Guardar configuración</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PANEL HISTORIAL ===================== -->
+<div *ngIf="showHistory" class="no-print fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm" (click)="closeHistory()">
+  <aside class="bg-white text-slate-900 w-full sm:max-w-lg h-full flex flex-col shadow-2xl safe-top safe-bottom" (click)="$event.stopPropagation()">
+    <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+      <div>
+        <h2 class="text-base font-bold">🕘 Historial de Órdenes</h2>
+        <p class="text-xs text-slate-500">{{ orders.length }} órdenes guardadas</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btn-refrescar-historial" type="button" (click)="refreshOrders()" class="px-3 py-1.5 text-xs rounded-lg border border-slate-300 hover:bg-slate-100">↻ Actualizar</button>
+        <button id="btn-cerrar-historial" type="button" (click)="closeHistory()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500 text-lg">✕</button>
+      </div>
+    </div>
+
+    <div class="px-5 py-3 border-b border-slate-100">
+      <input id="historial-buscar" [(ngModel)]="search" placeholder="Buscar por nombre, cédula o N° de orden…" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-sky-500 outline-none" />
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4 space-y-2 text-xs">
+      <p *ngIf="loadingOrders" class="text-center text-slate-500 py-6">Cargando…</p>
+      <p *ngIf="historyError" class="text-center text-rose-600 py-6">{{ historyError }}</p>
+      <p *ngIf="!loadingOrders && !historyError && filteredOrders.length === 0" class="text-center text-slate-500 py-6">No hay órdenes para mostrar.</p>
+
+      <div *ngFor="let o of filteredOrders" class="border border-slate-200 rounded-xl p-3 hover:border-sky-300 hover:shadow-sm transition">
+        <div class="flex justify-between items-start gap-2">
+          <div>
+            <p class="font-bold text-slate-900">{{ patientName(o) }}</p>
+            <p class="text-slate-500">CC {{ patientDoc(o) || '—' }} · {{ o.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+          <span class="font-mono font-bold text-sky-700">{{ o.orderNumber }}</span>
+        </div>
+        <div class="flex flex-wrap justify-between items-center gap-2 mt-2">
+          <span class="text-slate-600">Total <b>{{ o.precios?.totalVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</b> · Saldo <b class="text-rose-600">{{ o.precios?.saldo | currency:'COP':'symbol-narrow':'1.0-0' }}</b></span>
+          <div class="flex gap-1 w-full sm:w-auto">
+            <button type="button" (click)="viewOrder(o)" class="flex-1 sm:flex-none px-2 py-1.5 rounded bg-sky-50 text-sky-700 font-semibold hover:bg-sky-100">Ver</button>
+            <button type="button" (click)="printSaved(o)" class="flex-1 sm:flex-none px-2 py-1.5 rounded bg-slate-900 text-white font-semibold hover:bg-black">Imprimir</button>
+            <button type="button" (click)="deleteOrder(o)" class="flex-1 sm:flex-none px-2 py-1.5 rounded bg-rose-50 text-rose-600 font-semibold hover:bg-rose-100">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>

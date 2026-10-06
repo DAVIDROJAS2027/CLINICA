@@ -17,11 +17,11 @@
       <!-- Encabezado de la Óptica -->
       <div class="border-b-2 border-slate-900 pb-2 mb-2">
         <div class="flex justify-between items-start gap-2">
-          <div>
-            <h2 class="font-extrabold text-sm uppercase tracking-tight text-slate-900">ÓPTICA VISIÓN CLARA</h2>
-            <p class="text-[9px] text-slate-600">NIT/RUT: 900.482.910-3 • Régimen Simplificado</p>
-            <p class="text-[10px] font-medium text-slate-700">Dr. Leonardo Ramos - Optómetra ULS (Reg. 84920)</p>
-            <p class="text-[9px] text-slate-500">Carrera 15 # 85-32, Consultorio 302 • Tel: (601) 745-8900</p>
+          <div *ngIf="settings$ | async as cfg">
+            <h2 class="font-extrabold text-sm uppercase tracking-tight text-slate-900">{{ cfg.nombreOptica }}</h2>
+            <p class="text-[9px] text-slate-600">NIT/RUT: {{ cfg.nit }}</p>
+            <p class="text-[10px] font-medium text-slate-700">{{ cfg.doctorNombre }} - {{ cfg.doctorProfesion }} (Reg. {{ cfg.doctorRegistro }})</p>
+            <p class="text-[9px] text-slate-500">{{ cfg.direccion }} • Tel: {{ cfg.telefono }}</p>
           </div>
           <div class="text-right flex flex-col items-end">
             <span class="bg-slate-900 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded">ORDEN DE TRABAJO</span>
@@ -155,7 +155,7 @@
       <!-- Términos de Entrega & Firmas -->
       <div class="mt-2 text-[8px] text-slate-500 leading-tight">
         <p class="text-center font-medium">
-          * Garantía de adaptación de 30 días calendario sobre fórmula. Toda orden debe estar cancelada al momento de entrega física de los lentes.
+          * {{ (settings$ | async)?.garantia }}
         </p>
 
         <div class="grid grid-cols-2 gap-4 mt-6 pt-2">

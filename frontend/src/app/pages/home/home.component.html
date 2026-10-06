@@ -1,16 +1,19 @@
-<app-header></app-header>
-  
-<ion-content class="bg-gray-50">
-  <div class="container mx-auto p-4 max-w-7xl">
-    <div class="flex flex-col lg:flex-row gap-6">
-      
-      <!-- Left Column: Order Form -->
-      <div class="w-full lg:w-2/3">
+<!-- ion-header: el encabezado queda fijo arriba y el contenido no se monta debajo (web y móvil) -->
+<ion-header class="ion-no-border app-shell-header">
+  <app-header></app-header>
+</ion-header>
+
+<ion-content class="app-shell-content">
+  <div class="print-area-container mx-auto w-full max-w-7xl px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6">
+    <div class="print-area-row flex flex-col lg:flex-row lg:items-start gap-4 lg:gap-6">
+
+      <!-- Formulario (no se imprime). En escritorio ocupa el espacio restante -->
+      <div class="no-print w-full min-w-0 lg:flex-1">
         <app-order-form></app-order-form>
       </div>
 
-      <!-- Right Column: Receipt Preview -->
-      <div class="w-full lg:w-1/3">
+      <!-- Vista previa de la orden (lo único que se imprime). En escritorio queda fija al hacer scroll -->
+      <div class="print-area-col w-full lg:w-[420px] xl:w-[460px] lg:shrink-0 lg:sticky lg:top-4">
         <app-receipt-preview></app-receipt-preview>
       </div>
 

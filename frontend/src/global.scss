@@ -8,25 +8,86 @@
  * Put style rules here that you want to apply globally.
  */
 
+/* ================================================================
+ * IMPRESIÓN EN MEDIA CARTA (140 x 216 mm)
+ * En pantalla todo se ve normal. Solo al imprimir se aplica esto:
+ * se oculta el formulario/encabezado y sale únicamente la orden,
+ * ajustada exactamente a una hoja media carta vertical.
+ * ================================================================ */
 @page {
   size: 140mm 216mm;
-  margin: 6mm 7mm;
+  margin: 5mm;
 }
 
 @media print {
+  html,
   body {
+    width: 140mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    font-size: 10px !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  .no-print {
+  .no-print,
+  app-header,
+  app-order-form,
+  ion-header,
+  ion-footer {
     display: none !important;
   }
 
-  /* Ajustar contenedor del recibo al ancho completo del papel */
+  /* Ionic usa contenedores con scroll y position absolute que recortan
+     la impresión a una sola pantalla: se "aplanan" para imprimir. */
+  ion-app,
+  ion-router-outlet,
+  .ion-page,
+  ion-content,
+  app-home,
+  app-receipt-preview {
+    position: static !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    contain: none !important;
+    transform: none !important;
+  }
+
+  ion-content {
+    --overflow: visible;
+    --offset-top: 0px;
+    --offset-bottom: 0px;
+    --background: #ffffff;
+  }
+
+  ion-content::part(scroll) {
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  /* Quitar el layout de 2 columnas: la orden ocupa todo el papel */
+  .print-area-container {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-area-row {
+    display: block !important;
+    gap: 0 !important;
+  }
+
+  .print-area-col {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
   #receipt-wrapper {
     display: block !important;
     width: 100% !important;
@@ -35,15 +96,29 @@
     padding: 0 !important;
   }
 
+  /* La tarjeta = hoja media carta útil (140 - 2*5 mm de margen) */
   #invoice-card {
+    width: 130mm !important;
+    max-width: 130mm !important;
+    max-height: 206mm !important;
+    margin: 0 auto !important;
+    padding: 4mm 5mm !important;
     border: 1px solid #1e293b !important;
-    box-shadow: none !important;
-    padding: 8px 12px !important;
-    width: 100% !important;
-    background: white !important;
     border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+    font-size: 10.5px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    page-break-after: avoid;
+  }
+
+  #invoice-card table {
+    break-inside: avoid;
   }
 }
+
 
 ::-webkit-scrollbar {
   width: 6px;

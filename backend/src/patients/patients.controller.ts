@@ -20,6 +20,11 @@ export class PatientsController {
     return this.patientsService.findAll();
   }
 
+  @Get('documento/:documento')
+  findByDocument(@Param('documento') documento: string) {
+    return this.patientsService.findByDocument(documento);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.patientsService.findOne(id);

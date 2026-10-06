@@ -26,6 +26,9 @@ let PatientsController = class PatientsController {
         }
         return this.patientsService.findAll();
     }
+    findByDocument(documento) {
+        return this.patientsService.findByDocument(documento);
+    }
     findOne(id) {
         return this.patientsService.findOne(id);
     }
@@ -50,6 +53,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], PatientsController.prototype, "findAll", null);
+__decorate([
+    Get('documento/:documento'),
+    __param(0, Param('documento')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], PatientsController.prototype, "findByDocument", null);
 __decorate([
     Get(':id'),
     __param(0, Param('id')),
