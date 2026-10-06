@@ -8,7 +8,7 @@ import { Order } from '../interfaces/order.interface';
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:3000'; // URL por defecto de NestJS
+  private apiUrl = 'http://192.168.1.18:3000'; // URL por defecto de NestJS (Cambiada a IP local)
 
   constructor(private http: HttpClient) {}
 
