@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Óptico - Consulta, Facturación e Historial</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#082f49',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Estilos específicos para impresión en Media Carta (Half Letter / 140mm x 216mm) */
+    @page {
+      size: 140mm 216mm;
+      margin: 6mm 7mm;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 10px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* Ocultar elementos de la interfaz de usuario */
+      .no-print,
+      header,
+      #app-sidebar,
+      #form-panel,
+      #toast-container,
+      #history-modal,
+      #admin-modal,
+      .action-toolbar {
+        display: none !important;
+      }
+
+      /* Ajustar contenedor del recibo al ancho completo del papel */
+      #receipt-wrapper {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      #invoice-card {
+        border: 1px solid #1e293b !important;
+        box-shadow: none !important;
+        padding: 8px 12px !important;
+        width: 100% !important;
+        background: white !important;
+        border-radius: 0 !important;
+      }
+
+      .print-border-b {
+        border-bottom: 1px dashed #475569 !important;
+      }
+
+      .print-compact-p {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+      }
+    }
+
+    /* Scrollbars finos para el panel */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <header class="no-print bg-slate-900 text-white border-b border-slate-800 shadow-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Marca / Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30 text-white font-black text-xl">
+          👓
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+            Óptica Visión Clásica
+            <span class="text-[10px] bg-sky-500/20 text-sky-300 font-mono px-2 py-0.5 rounded-full border border-sky-400/30">v2.5 Media Carta</span>
+          </h1>
+          <p class="text-xs text-slate-400">Consultorio Optométrico & Facturación Rápida</p>
+        </div>
+      </div>
+
+      <!-- Datos del Admin Activo & Navegación -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Indicador de Doctor Activo -->
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-400">Atendiendo:</span>
+          <span id="header-doctor-name" class="font-semibold text-slate-200">Dr. Leonardo Ramos</span>
+        </div>
+
+        <!-- Botón Historial -->
+        <button onclick="toggleHistoryModal(true)" class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition">
+          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Historial Pacientes
+          <span id="badge-total-orders" class="ml-1 bg-sky-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">2</span>
+        </button>
+
+        <!-- Botón Admin / Ajustes -->
+        <button onclick="openDoctorModal()" title="Configuración del Doctor y Óptica" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- COLUMNA IZQUIERDA: FORMULARIO CLÍNICO Y ECONÓMICO (7 Columnas en escritorio) -->
+    <section id="form-panel" class="no-print lg:col-span-7 space-y-4">
+
+      <!-- Barra de acciones rápidas superior -->
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Orden Actual:</span>
+          <span id="form-order-number-display" class="font-mono text-sm font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">#ORD-0103</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="resetFormToNewOrder()" class="text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Limpiar / Nueva
+          </button>
+          <button type="button" onclick="loadSampleCase(1)" class="text-[11px] font-semibold text-sky-600 hover:bg-sky-50 px-2 py-1 rounded transition border border-sky-200">
+            Demo 1
+          </button>
+          <button type="button" onclick="loadSampleCase(2)" class="text-[11px] font-semibold text-purple-600 hover:bg-purple-50 px-2 py-1 rounded transition border border-purple-200">
+            Demo 2
+          </button>
+        </div>
+      </div>
+
+      <!-- CARD 1: Datos del Paciente -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <span class="w-5 h-5 rounded bg-sky-100 text-sky-700 flex items-center justify-center text-xs">👤</span>
+            1. Datos del Paciente <span class="text-[11px] font-normal text-slate-400">(100% opcional y editable)</span>
+          </h2>
+          <button type="button" onclick="quickPatientSearchPrompt()" class="text-[11px] font-semibold text-sky-600 hover:underline">
+            🔍 Autocompletar por Cédula
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+          <div class="sm:col-span-4">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Cédula / Documento</label>
+            <input type="text" id="inp-doc" placeholder="Ej: 1020492811" oninput="handleDocInput(this.value); syncToReceipt();" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+          </div>
+
+          <div class="sm:col-span-8">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nombre Completo</label>
+            <input type="text" id="inp-nombre" placeholder="Ej: Mariana Rodríguez Peña" oninput="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+          </div>
+
+          <div class="sm:col-span-5">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">WhatsApp / Teléfono</label>
+            <input type="tel" id="inp-tel" placeholder="Ej: 3105559876" oninput="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+          </div>
+
+          <div class="sm:col-span-3">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Edad</label>
+            <input type="text" id="inp-edad" placeholder="Ej: 34 años" oninput="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+          </div>
+
+          <div class="sm:col-span-4">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Fecha Emisión</label>
+            <input type="date" id="inp-fecha" oninput="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition">
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: Fórmula Optométrica -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <span class="w-5 h-5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">👁️</span>
+            2. Graduación Optométrica (RX)
+          </h2>
+          <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono">Signos (+/-) opcionales</span>
+        </div>
+
+        <!-- Tabla interactiva OD / OI -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border border-slate-200 rounded-lg overflow-hidden">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600 text-[11px] uppercase font-bold text-center">
+                <th class="p-2 border-r border-b border-slate-200 w-16">Ojo</th>
+                <th class="p-2 border-r border-b border-slate-200">Esfera</th>
+                <th class="p-2 border-r border-b border-slate-200">Cilindro</th>
+                <th class="p-2 border-r border-b border-slate-200">Eje</th>
+                <th class="p-2 border-r border-b border-slate-200">Adición</th>
+                <th class="p-2 border-b border-slate-200">DP (mm)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Ojo Derecho -->
+              <tr class="bg-sky-50/40 hover:bg-sky-50/70 transition">
+                <td class="p-2 font-black text-sky-800 border-r border-b border-slate-200 text-center bg-sky-100/60">OD</td>
+                <td class="p-1 border-r border-b border-slate-200">
+                  <input type="text" id="inp-od-esf" placeholder="-1.50" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+                <td class="p-1 border-r border-b border-slate-200">
+                  <input type="text" id="inp-od-cil" placeholder="-0.75" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+                <td class="p-1 border-r border-b border-slate-200">
+                  <input type="text" id="inp-od-eje" placeholder="180°" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+                <td class="p-1 border-r border-b border-slate-200">
+                  <input type="text" id="inp-od-add" placeholder="+1.75" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+                <td class="p-1 border-b border-slate-200">
+                  <input type="text" id="inp-od-dp" placeholder="32" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+              </tr>
+              <!-- Ojo Izquierdo -->
+              <tr class="bg-white hover:bg-slate-50 transition">
+                <td class="p-2 font-black text-slate-800 border-r border-slate-200 text-center bg-slate-100">OI</td>
+                <td class="p-1 border-r border-slate-200">
+                  <input type="text" id="inp-oi-esf" placeholder="-1.25" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+                <td class="p-1 border-r border-slate-200">
+                  <input type="text" id="inp-oi-cil" placeholder="-0.50" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+                <td class="p-1 border-r border-slate-200">
+                  <input type="text" id="inp-oi-eje" placeholder="175°" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+                <td class="p-1 border-r border-slate-200">
+                  <input type="text" id="inp-oi-add" placeholder="+1.75" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+                <td class="p-1">
+                  <input type="text" id="inp-oi-dp" placeholder="31" oninput="syncToReceipt()" class="w-full text-center p-1.5 border border-slate-200 rounded font-mono font-medium focus:bg-white focus:ring-1 focus:ring-sky-500">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Distancia Pupilar Total / Altura</label>
+            <input type="text" id="inp-dp-total" placeholder="Ej: D.P. 63 mm | Altura 18 mm" oninput="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Uso Recomendado</label>
+            <select id="inp-uso" onchange="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 outline-none">
+              <option value="Visión Lejana / Permanente">Visión Lejana / Permanente</option>
+              <option value="Lectura / Visión Próxima">Lectura / Visión Próxima</option>
+              <option value="Progresivo (Cerca, Media y Lejana)">Progresivo (Cerca, Media y Lejana)</option>
+              <option value="Ocupacional / Pantallas y Oficina">Ocupacional / Pantallas y Oficina</option>
+              <option value="Protección Solar Graduada">Protección Solar Graduada</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: Montura, Lentes y Observaciones -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2 border-b border-slate-100 pb-2">
+          <span class="w-5 h-5 rounded bg-amber-100 text-amber-700 flex items-center justify-center text-xs">🕶️</span>
+          3. Montura, Tipo de Lente y Tratamientos
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Referencia Montura / Marca</label>
+            <input type="text" id="inp-montura" placeholder="Ej: Acetato Ray-Ban 5154 Carey" oninput="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tipo de Lente y Material</label>
+            <input type="text" id="inp-lente" placeholder="Ej: Policarbonato Antirreflejo Blue Block" oninput="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Observaciones / Indicaciones Especiales</label>
+            <textarea id="inp-obs" rows="2" placeholder="Ej: Adaptación de lentes en 5 días hábiles. Traer montura anterior para traspaso." oninput="syncToReceipt()" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: Precios, Abonos y Saldos -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2 border-b border-slate-100 pb-2">
+          <span class="w-5 h-5 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs">💵</span>
+          4. Facturación, Abonos y Liquidación
+        </h2>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Montura ($)</label>
+            <input type="number" id="inp-precio-montura" value="0" min="0" oninput="calculateFinancials()" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Lentes / Cristales ($)</label>
+            <input type="number" id="inp-precio-lentes" value="0" min="0" oninput="calculateFinancials()" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Consulta / Otros ($)</label>
+            <input type="number" id="inp-precio-otros" value="0" min="0" oninput="calculateFinancials()" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Descuento ($)</label>
+            <input type="number" id="inp-descuento" value="0" min="0" oninput="calculateFinancials()" class="w-full text-xs font-mono p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none text-rose-600">
+          </div>
+        </div>
+
+        <!-- Totales consolidados con Abono y Saldo -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-500">Total Venta</label>
+            <div id="disp-calc-total" class="font-mono text-base font-extrabold text-slate-800">$0</div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-500">Abono / Anticipo ($)</label>
+            <input type="number" id="inp-abono" value="0" min="0" oninput="calculateFinancials()" class="w-full text-xs font-mono font-bold p-1.5 border border-emerald-300 bg-emerald-50/50 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-800">
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-500">Saldo Pendiente</label>
+            <div id="disp-calc-saldo" class="font-mono text-base font-black text-rose-600">$0</div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-500">Método de Pago</label>
+            <select id="inp-metodo-pago" onchange="syncToReceipt()" class="w-full text-xs p-1.5 border border-slate-300 rounded-lg bg-white">
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia / Nequi / Daviplata">Transferencia / QR</option>
+              <option value="Tarjeta Débito/Crédito">Tarjeta Débito/Crédito</option>
+              <option value="Mixto">Mixto</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- BARRA DE ACCIÓN PRINCIPAL (GUARDAR, IMPRIMIR, WHATSAPP) -->
+      <div class="action-toolbar bg-white p-4 rounded-xl border border-slate-200 shadow-md flex flex-wrap gap-2 items-center justify-between">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="saveOrderToDatabase()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm hover:shadow flex items-center gap-2 transition active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+            Guardar Venta y Paciente
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Botón WhatsApp -->
+          <button type="button" onclick="sendInvoiceWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-3.5 rounded-lg shadow-sm hover:shadow flex items-center gap-2 transition active:scale-95">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.54 1.768.809 2.796.809 3.179 0 5.766-2.587 5.767-5.766.002-3.18-2.585-5.796-5.767-5.796zm3.385 8.163c-.145.411-.85.764-1.177.808-.316.044-.725.074-2.373-.609-1.996-.826-3.266-2.852-3.365-2.986-.1-.133-.809-1.076-.809-2.052 0-.975.511-1.455.694-1.654.183-.199.398-.249.531-.249.133 0 .266.002.383.007.123.006.289-.046.452.347.166.399.565 1.381.614 1.481.05.1.083.216.017.349-.067.133-.1.216-.199.332-.1.116-.21.26-.299.349-.1.1-.205.209-.089.409.117.199.519.856 1.113 1.384.767.682 1.413.894 1.613.993.2.1.316.083.433-.05.116-.133.499-.581.632-.78.133-.2.266-.166.449-.1.183.067 1.164.549 1.363.649.2.1.332.149.382.233.05.083.05.482-.095.893z"/></svg>
+            WhatsApp
+          </button>
+
+          <!-- Botón Imprimir Media Carta -->
+          <button type="button" onclick="printInvoiceHalfLetter()" class="bg-slate-900 hover:bg-black text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm hover:shadow flex items-center gap-2 transition active:scale-95">
+            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Imprimir Media Carta
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUMNA DERECHA: VISTA PREVIA Y FORMATO DE IMPRESIÓN MEDIA CARTA (5 Columnas en escritorio) -->
+    <section id="receipt-wrapper" class="lg:col-span-5 flex flex-col items-center">
+      
+      <!-- Barra superior informativa (no print) -->
+      <div class="no-print w-full flex items-center justify-between pb-2 px-1 text-xs text-slate-500">
+        <span class="font-bold uppercase tracking-wider flex items-center gap-1.5 text-slate-600">
+          <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+          Vista Media Carta (140 x 216 mm)
+        </span>
+        <button type="button" onclick="printInvoiceHalfLetter()" class="text-sky-600 font-semibold hover:underline">
+          Imprimir ahora 🖨️
+        </button>
+      </div>
+
+      <!-- Tarjeta física que replica exactamente la hoja Media Carta -->
+      <div id="invoice-card" class="bg-white text-slate-900 border border-slate-300 rounded-xl shadow-lg p-5 w-full max-w-md select-text relative font-sans text-[11px] leading-tight">
+
+        <!-- Encabezado de la Óptica -->
+        <div class="border-b-2 border-slate-900 pb-2 mb-2">
+          <div class="flex justify-between items-start gap-2">
+            <div>
+              <h2 id="rcpt-clinic-name" class="font-extrabold text-sm uppercase tracking-tight text-slate-900">ÓPTICA VISIÓN CLARA</h2>
+              <p id="rcpt-clinic-doc" class="text-[9px] text-slate-600">NIT/RUT: 900.482.910-3 • Régimen Simplificado</p>
+              <p id="rcpt-clinic-doctor" class="text-[10px] font-medium text-slate-700">Dr. Leonardo Ramos - Optómetra ULS (Reg. 84920)</p>
+              <p id="rcpt-clinic-address" class="text-[9px] text-slate-500">Carrera 15 # 85-32, Consultorio 302 • Tel: (601) 745-8900</p>
+            </div>
+            <div class="text-right flex flex-col items-end">
+              <span class="bg-slate-900 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded">ORDEN DE TRABAJO</span>
+              <span id="rcpt-order-id" class="font-mono font-black text-sm text-sky-800 mt-1">#ORD-0103</span>
+              <span id="rcpt-fecha" class="text-[9px] text-slate-500 mt-0.5">05/10/2026</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cuadro Resumen Paciente -->
+        <div class="bg-slate-50 rounded p-2 mb-2 border border-slate-200">
+          <div class="grid grid-cols-12 gap-1 text-[10px]">
+            <div class="col-span-8">
+              <span class="text-slate-500 font-semibold">Paciente:</span>
+              <span id="rcpt-nombre" class="font-bold text-slate-900 ml-1">Mariana Rodríguez Peña</span>
+            </div>
+            <div class="col-span-4 text-right">
+              <span class="text-slate-500 font-semibold">Edad:</span>
+              <span id="rcpt-edad" class="font-bold text-slate-900 ml-1">34 años</span>
+            </div>
+            <div class="col-span-7">
+              <span class="text-slate-500 font-semibold">Cédula:</span>
+              <span id="rcpt-doc" class="font-mono font-bold text-slate-900 ml-1">1020492811</span>
+            </div>
+            <div class="col-span-5 text-right">
+              <span class="text-slate-500 font-semibold">WhatsApp:</span>
+              <span id="rcpt-tel" class="font-bold text-slate-900 ml-1">3105559876</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla Fórmula Óptica -->
+        <div class="mb-2">
+          <div class="flex justify-between items-center mb-0.5">
+            <span class="font-extrabold text-[9px] uppercase tracking-wider text-slate-700">Fórmula Optométrica (RX)</span>
+            <span id="rcpt-uso" class="text-[9px] font-medium text-slate-500 italic">Visión Lejana / Permanente</span>
+          </div>
+          <table class="w-full text-center border-collapse border border-slate-300 text-[10px]">
+            <thead>
+              <tr class="bg-slate-100 font-bold text-slate-700">
+                <th class="border border-slate-300 py-0.5 px-1 w-8">OJO</th>
+                <th class="border border-slate-300 py-0.5 px-1">ESF</th>
+                <th class="border border-slate-300 py-0.5 px-1">CIL</th>
+                <th class="border border-slate-300 py-0.5 px-1">EJE</th>
+                <th class="border border-slate-300 py-0.5 px-1">ADD</th>
+                <th class="border border-slate-300 py-0.5 px-1">DP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="border border-slate-300 font-black bg-slate-50 py-0.5">OD</td>
+                <td id="rcpt-od-esf" class="border border-slate-300 font-mono py-0.5 font-semibold">-1.50</td>
+                <td id="rcpt-od-cil" class="border border-slate-300 font-mono py-0.5 font-semibold">-0.75</td>
+                <td id="rcpt-od-eje" class="border border-slate-300 font-mono py-0.5 font-semibold">180°</td>
+                <td id="rcpt-od-add" class="border border-slate-300 font-mono py-0.5 font-semibold">+1.75</td>
+                <td id="rcpt-od-dp" class="border border-slate-300 font-mono py-0.5 font-semibold">32</td>
+              </tr>
+              <tr>
+                <td class="border border-slate-300 font-black bg-slate-50 py-0.5">OI</td>
+                <td id="rcpt-oi-esf" class="border border-slate-300 font-mono py-0.5 font-semibold">-1.25</td>
+                <td id="rcpt-oi-cil" class="border border-slate-300 font-mono py-0.5 font-semibold">-0.50</td>
+                <td id="rcpt-oi-eje" class="border border-slate-300 font-mono py-0.5 font-semibold">175°</td>
+                <td id="rcpt-oi-add" class="border border-slate-300 font-mono py-0.5 font-semibold">+1.75</td>
+                <td id="rcpt-oi-dp" class="border border-slate-300 font-mono py-0.5 font-semibold">31</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="rcpt-dp-total-box" class="text-[9px] text-slate-600 mt-0.5 text-right font-medium">
+            <span id="rcpt-dp-total">D.P. Total: 63 mm</span>
+          </div>
+        </div>
+
+        <!-- Detalle de Producto / Montura / Lente -->
+        <div class="border border-slate-200 rounded p-2 mb-2 bg-white space-y-1 text-[10px]">
+          <div class="flex justify-between items-start border-b border-slate-100 pb-1">
+            <span class="text-slate-500 font-medium">Montura:</span>
+            <span id="rcpt-montura" class="font-bold text-slate-900 text-right">Acetato Ray-Ban 5154 Carey</span>
+          </div>
+          <div class="flex justify-between items-start border-b border-slate-100 pb-1">
+            <span class="text-slate-500 font-medium">Lentes / Tratamiento:</span>
+            <span id="rcpt-lente" class="font-bold text-slate-900 text-right">Policarbonato Antirreflejo Blue Block</span>
+          </div>
+          <div id="rcpt-obs-row" class="text-[9px] text-slate-600 pt-0.5">
+            <span class="font-semibold text-slate-500">Notas:</span>
+            <span id="rcpt-obs">Entrega estimada en 5 días hábiles. Incluye estuche y paño de microfibra.</span>
+          </div>
+        </div>
+
+        <!-- Desglose Económico y Saldos -->
+        <div class="bg-slate-50 rounded border border-slate-300 p-2 mb-2 text-[10px]">
+          <div class="grid grid-cols-2 gap-x-2 gap-y-1">
+            <div class="flex justify-between">
+              <span class="text-slate-600">Montura:</span>
+              <span id="rcpt-val-montura" class="font-mono font-medium">$180,000</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Lentes:</span>
+              <span id="rcpt-val-lentes" class="font-mono font-medium">$210,000</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Examen / Otros:</span>
+              <span id="rcpt-val-otros" class="font-mono font-medium">$40,000</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Descuento:</span>
+              <span id="rcpt-val-desc" class="font-mono font-medium text-rose-600">-$30,000</span>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-300 mt-1.5 pt-1.5 flex justify-between items-center text-[11px]">
+            <span class="font-bold text-slate-700">VALOR TOTAL:</span>
+            <span id="rcpt-val-total" class="font-mono font-extrabold text-slate-900 text-xs">$400,000</span>
+          </div>
+
+          <div class="flex justify-between items-center text-[11px] text-emerald-700">
+            <span class="font-semibold">Abono Inicial:</span>
+            <span id="rcpt-val-abono" class="font-mono font-bold">$200,000</span>
+          </div>
+
+          <!-- SALDO DESTACADO -->
+          <div class="border-t-2 border-slate-900 mt-1 pt-1 flex justify-between items-center bg-amber-50 p-1 rounded">
+            <div class="flex flex-col">
+              <span class="font-black text-rose-700 uppercase tracking-tight text-[11px]">SALDO PENDIENTE:</span>
+              <span id="rcpt-metodo" class="text-[8px] text-slate-500 font-medium">Pago: Transferencia / Nequi</span>
+            </div>
+            <span id="rcpt-val-saldo" class="font-mono font-black text-sm text-rose-600">$200,000</span>
+          </div>
+        </div>
+
+        <!-- Términos de Entrega & Firmas -->
+        <div class="mt-2 text-[8px] text-slate-500 leading-tight">
+          <p class="text-center font-medium">
+            * Garantía de adaptación de 30 días calendario sobre fórmula. Toda orden debe estar cancelada al momento de entrega física de los lentes.
+          </p>
+
+          <div class="grid grid-cols-2 gap-4 mt-6 pt-2">
+            <div class="border-t border-slate-400 text-center">
+              <p class="font-bold text-slate-700">Firma Profesional</p>
+              <p class="text-[7.5px] text-slate-400">Optometría y Control</p>
+            </div>
+            <div class="border-t border-slate-400 text-center">
+              <p class="font-bold text-slate-700">Firma Paciente / Recibido</p>
+              <p class="text-[7.5px] text-slate-400">Aceptación y Retiro</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: HISTORIAL DE PACIENTES Y ÓRDENES -->
+  <div id="history-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+      
+      <!-- Encabezado Modal -->
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+            📋
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-slate-800">Historial Clínico y Facturas</h3>
+            <p class="text-[11px] text-slate-500">Búsqueda rápida por Documento o Nombre del Paciente</p>
+          </div>
+        </div>
+        <button onclick="toggleHistoryModal(false)" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="p-3 bg-white border-b border-slate-100">
+        <div class="relative">
+          <input type="text" id="search-history-input" oninput="filterHistoryList(this.value)" placeholder="Escriba documento (cédula) o nombre del paciente..." class="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+          <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
+        </div>
+      </div>
+
+      <!-- Lista de Registros -->
+      <div id="history-list-container" class="flex-1 overflow-y-auto p-4 space-y-2">
+        <!-- Renderizado dinámico vía JavaScript -->
+      </div>
+
+      <!-- Pie Modal -->
+      <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs">
+        <span id="history-counter-label" class="text-slate-500">2 órdenes en historial</span>
+        <button onclick="toggleHistoryModal(false)" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 font-semibold text-slate-700 rounded-lg transition">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PERFIL DOCTOR / CONFIGURACIÓN DE ÓPTICA -->
+  <div id="admin-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+            👨‍⚕️
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-slate-800">Configuración del Consultorio</h3>
+            <p class="text-[11px] text-slate-500">Datos que se imprimen en el encabezado</p>
+          </div>
+        </div>
+        <button onclick="closeDoctorModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Nombre Comercial de la Óptica</label>
+          <input type="text" id="adm-clinic-name" value="Óptica Visión Clara" class="w-full p-2 border border-slate-300 rounded-lg">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">NIT / Identificación Tributaria</label>
+          <input type="text" id="adm-clinic-doc" value="NIT: 900.482.910-3 • Régimen Simplificado" class="w-full p-2 border border-slate-300 rounded-lg">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Doctor / Optómetra a Cargo</label>
+          <input type="text" id="adm-doctor-name" value="Dr. Leonardo Ramos - Optómetra ULS (Reg. 84920)" class="w-full p-2 border border-slate-300 rounded-lg">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Dirección y Teléfono</label>
+          <input type="text" id="adm-clinic-contact" value="Carrera 15 # 85-32, Consultorio 302 • Tel: (601) 745-8900" class="w-full p-2 border border-slate-300 rounded-lg">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Teléfono Móvil Óptica para WhatsApp (+código país)</label>
+          <input type="text" id="adm-whatsapp-code" value="573105559876" class="w-full p-2 border border-slate-300 rounded-lg font-mono">
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 text-xs">
+        <button onclick="closeDoctorModal()" class="px-3 py-1.5 bg-slate-200 font-semibold text-slate-700 rounded-lg">Cancelar</button>
+        <button onclick="saveDoctorSettings()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 font-bold text-white rounded-lg">Guardar Configuración</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. ALMACENAMIENTO LOCAL: 2 TABLAS VIRTUALES
+       - Tabla 1: 'optica_admin_config' (Sesión e Info del Doctor)
+       - Tabla 2: 'optica_ordenes_pacientes' (Historial de pacientes y facturas)
+       ========================================================================== */
+
+    const DEFAULT_ADMIN = {
+      nombreOptica: "Óptica Visión Clara",
+      nit: "NIT: 900.482.910-3 • Régimen Simplificado",
+      doctor: "Dr. Leonardo Ramos - Optómetra ULS (Reg. 84920)",
+      direccionTel: "Carrera 15 # 85-32, Consultorio 302 • Tel: (601) 745-8900",
+      telefonoWhatsApp: "573105559876"
+    };
+
+    const SAMPLE_ORDERS = [
+      {
+        id: "ORD-0101",
+        fecha: "2026-10-02",
+        paciente: {
+          doc: "1020492811",
+          nombre: "Mariana Rodríguez Peña",
+          tel: "3105559876",
+          edad: "34 años"
+        },
+        formula: {
+          od: { esf: "-1.50", cil: "-0.75", eje: "180°", add: "+1.75", dp: "32" },
+          oi: { esf: "-1.25", cil: "-0.50", eje: "175°", add: "+1.75", dp: "31" },
+          dpTotal: "D.P. Total: 63 mm | Altura 18 mm",
+          uso: "Visión Lejana / Permanente"
+        },
+        productos: {
+          montura: "Acetato Ray-Ban 5154 Carey",
+          lente: "Policarbonato Antirreflejo Blue Block",
+          obs: "Entrega estimada en 5 días hábiles. Incluye estuche y microfibra."
+        },
+        precios: {
+          montura: 180000,
+          lentes: 210000,
+          otros: 40000,
+          descuento: 30000,
+          total: 400000,
+          abono: 200000,
+          saldo: 200000,
+          metodoPago: "Transferencia / Nequi / Daviplata"
+        }
+      },
+      {
+        id: "ORD-0102",
+        fecha: "2026-10-04",
+        paciente: {
+          doc: "79482910",
+          nombre: "Carlos Eduardo Gómez",
+          tel: "3158882341",
+          edad: "52 años"
+        },
+        formula: {
+          od: { esf: "+1.00", cil: "-1.25", eje: "90°", add: "+2.25", dp: "33" },
+          oi: { esf: "+1.25", cil: "-1.00", eje: "85°", add: "+2.25", dp: "33" },
+          dpTotal: "D.P. 66 mm",
+          uso: "Progresivo (Cerca, Media y Lejana)"
+        },
+        productos: {
+          montura: "Titanio Flex Ultraliviano Negro",
+          lente: "Progresivo HD Freeform Antirreflejo",
+          obs: "Paciente requiere control de adaptación en 15 días."
+        },
+        precios: {
+          montura: 220000,
+          lentes: 380000,
+          otros: 0,
+          descuento: 50000,
+          total: 550000,
+          abono: 300000,
+          saldo: 250000,
+          metodoPago: "Tarjeta Débito/Crédito"
+        }
+      }
+    ];
+
+    function getAdminConfig() {
+      const stored = localStorage.getItem('optica_admin_config');
+      return stored ? JSON.parse(stored) : DEFAULT_ADMIN;
+    }
+
+    function getPatientOrders() {
+      const stored = localStorage.getItem('optica_ordenes_pacientes');
+      if (!stored) {
+        localStorage.setItem('optica_ordenes_pacientes', JSON.stringify(SAMPLE_ORDERS));
+        return SAMPLE_ORDERS;
+      }
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return SAMPLE_ORDERS;
+      }
+    }
+
+    function savePatientOrders(orders) {
+      localStorage.setItem('optica_ordenes_pacientes', JSON.stringify(orders));
+      updateOrdersCountBadge();
+    }
+
+    /* ==========================================================================
+       2. CONTROLADOR DEL FORMULARIO Y SINCRONIZACIÓN EN TIEMPO REAL
+       ========================================================================== */
+
+    let currentOrderNumber = "ORD-0103";
+
+    function generateNextOrderId() {
+      const orders = getPatientOrders();
+      if (!orders || orders.length === 0) return "ORD-0101";
+      const last = orders[orders.length - 1];
+      const match = last.id.match(/\d+/);
+      if (match) {
+        const nextNum = parseInt(match[0]) + 1;
+        return "ORD-" + String(nextNum).padStart(4, '0');
+      }
+      return "ORD-" + Math.floor(1000 + Math.random() * 9000);
+    }
+
+    // Inicializar inputs y sincronizar con recibo
+    function initializeApp() {
+      // Fecha por defecto hoy
+      const today = new Date().toISOString().split('T')[0];
+      const dateInp = document.getElementById('inp-fecha');
+      if (dateInp) dateInp.value = today;
+
+      // Cargar configuración de doctor
+      applyDoctorSettingsToUI();
+
+      // Cargar caso demo 1 por defecto para vista inmediata
+      loadSampleCase(1, false);
+
+      updateOrdersCountBadge();
+    }
+
+    function calculateFinancials() {
+      const montura = parseFloat(document.getElementById('inp-precio-montura').value) || 0;
+      const lentes = parseFloat(document.getElementById('inp-precio-lentes').value) || 0;
+      const otros = parseFloat(document.getElementById('inp-precio-otros').value) || 0;
+      const descuento = parseFloat(document.getElementById('inp-descuento').value) || 0;
+      const abono = parseFloat(document.getElementById('inp-abono').value) || 0;
+
+      const subtotal = montura + lentes + otros;
+      const total = Math.max(0, subtotal - descuento);
+      const saldo = Math.max(0, total - abono);
+
+      // Actualizar display formulario
+      document.getElementById('disp-calc-total').innerText = formatCurrency(total);
+      document.getElementById('disp-calc-saldo').innerText = formatCurrency(saldo);
+
+      // Sincronizar en el recibo Media Carta
+      document.getElementById('rcpt-val-montura').innerText = formatCurrency(montura);
+      document.getElementById('rcpt-val-lentes').innerText = formatCurrency(lentes);
+      document.getElementById('rcpt-val-otros').innerText = formatCurrency(otros);
+      document.getElementById('rcpt-val-desc').innerText = descuento > 0 ? `-${formatCurrency(descuento)}` : '$0';
+      document.getElementById('rcpt-val-total').innerText = formatCurrency(total);
+      document.getElementById('rcpt-val-abono').innerText = formatCurrency(abono);
+      document.getElementById('rcpt-val-saldo').innerText = formatCurrency(saldo);
+    }
+
+    function formatCurrency(amount) {
+      return '$' + Math.round(amount).toLocaleString('es-CO');
+    }
+
+    function syncToReceipt() {
+      // Paciente
+      const doc = document.getElementById('inp-doc').value.trim();
+      const nombre = document.getElementById('inp-nombre').value.trim();
+      const tel = document.getElementById('inp-tel').value.trim();
+      const edad = document.getElementById('inp-edad').value.trim();
+      const fecha = document.getElementById('inp-fecha').value;
+
+      document.getElementById('rcpt-doc').innerText = doc || '---';
+      document.getElementById('rcpt-nombre').innerText = nombre || 'Sin Nombre';
+      document.getElementById('rcpt-tel').innerText = tel || '---';
+      document.getElementById('rcpt-edad').innerText = edad || '---';
+      document.getElementById('rcpt-fecha').innerText = formatDateDisplay(fecha);
+
+      // Fórmula OD
+      document.getElementById('rcpt-od-esf').innerText = document.getElementById('inp-od-esf').value || '-';
+      document.getElementById('rcpt-od-cil').innerText = document.getElementById('inp-od-cil').value || '-';
+      document.getElementById('rcpt-od-eje').innerText = document.getElementById('inp-od-eje').value || '-';
+      document.getElementById('rcpt-od-add').innerText = document.getElementById('inp-od-add').value || '-';
+      document.getElementById('rcpt-od-dp').innerText = document.getElementById('inp-od-dp').value || '-';
+
+      // Fórmula OI
+      document.getElementById('rcpt-oi-esf').innerText = document.getElementById('inp-oi-esf').value || '-';
+      document.getElementById('rcpt-oi-cil').innerText = document.getElementById('inp-oi-cil').value || '-';
+      document.getElementById('rcpt-oi-eje').innerText = document.getElementById('inp-oi-eje').value || '-';
+      document.getElementById('rcpt-oi-add').innerText = document.getElementById('inp-oi-add').value || '-';
+      document.getElementById('rcpt-oi-dp').innerText = document.getElementById('inp-oi-dp').value || '-';
+
+      // DP Total y Uso
+      const dpTotal = document.getElementById('inp-dp-total').value.trim();
+      document.getElementById('rcpt-dp-total').innerText = dpTotal || 'D.P. Estándar';
+      document.getElementById('rcpt-uso').innerText = document.getElementById('inp-uso').value;
+
+      // Montura y Lentes
+      const montura = document.getElementById('inp-montura').value.trim();
+      const lente = document.getElementById('inp-lente').value.trim();
+      const obs = document.getElementById('inp-obs').value.trim();
+
+      document.getElementById('rcpt-montura').innerText = montura || '---';
+      document.getElementById('rcpt-lente').innerText = lente || '---';
+      document.getElementById('rcpt-obs').innerText = obs || 'Sin observaciones adicionales.';
+
+      // Método de pago
+      document.getElementById('rcpt-metodo').innerText = 'Pago: ' + document.getElementById('inp-metodo-pago').value;
+
+      // Recalcular montos
+      calculateFinancials();
+    }
+
+    function formatDateDisplay(dateStr) {
+      if (!dateStr) return new Date().toLocaleDateString('es-CO');
+      const parts = dateStr.split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return dateStr;
+    }
+
+    function saveOrderToDatabase() {
+      const doc = document.getElementById('inp-doc').value.trim();
+      const nombre = document.getElementById('inp-nombre').value.trim();
+
+      if (!doc && !nombre) {
+        showToast('Por favor ingrese al menos la Cédula o el Nombre del paciente para guardar.', 'error');
+        return;
+      }
+
+      const orderData = {
+        id: currentOrderNumber,
+        fecha: document.getElementById('inp-fecha').value || new Date().toISOString().split('T')[0],
+        paciente: {
+          doc: doc || 'S/D',
+          nombre: nombre || 'Paciente Sin Nombre',
+          tel: document.getElementById('inp-tel').value.trim(),
+          edad: document.getElementById('inp-edad').value.trim()
+        },
+        formula: {
+          od: {
+            esf: document.getElementById('inp-od-esf').value.trim(),
+            cil: document.getElementById('inp-od-cil').value.trim(),
+            eje: document.getElementById('inp-od-eje').value.trim(),
+            add: document.getElementById('inp-od-add').value.trim(),
+            dp: document.getElementById('inp-od-dp').value.trim()
+          },
+          oi: {
+            esf: document.getElementById('inp-oi-esf').value.trim(),
+            cil: document.getElementById('inp-oi-cil').value.trim(),
+            eje: document.getElementById('inp-oi-eje').value.trim(),
+            add: document.getElementById('inp-oi-add').value.trim(),
+            dp: document.getElementById('inp-oi-dp').value.trim()
+          },
+          dpTotal: document.getElementById('inp-dp-total').value.trim(),
+          uso: document.getElementById('inp-uso').value
+        },
+        productos: {
+          montura: document.getElementById('inp-montura').value.trim(),
+          lente: document.getElementById('inp-lente').value.trim(),
+          obs: document.getElementById('inp-obs').value.trim()
+        },
+        precios: {
+          montura: parseFloat(document.getElementById('inp-precio-montura').value) || 0,
+          lentes: parseFloat(document.getElementById('inp-precio-lentes').value) || 0,
+          otros: parseFloat(document.getElementById('inp-precio-otros').value) || 0,
+          descuento: parseFloat(document.getElementById('inp-descuento').value) || 0,
+          total: getNumericTotal(),
+          abono: parseFloat(document.getElementById('inp-abono').value) || 0,
+          saldo: getNumericSaldo(),
+          metodoPago: document.getElementById('inp-metodo-pago').value
+        }
+      };
+
+      const orders = getPatientOrders();
+      // Si la orden ya existe por ID, se actualiza; de lo contrario se agrega
+      const existingIndex = orders.findIndex(o => o.id === currentOrderNumber);
+      if (existingIndex >= 0) {
+        orders[existingIndex] = orderData;
+        showToast(`Orden ${currentOrderNumber} actualizada correctamente en historial.`, 'success');
+      } else {
+        orders.push(orderData);
+        showToast(`¡Venta y paciente guardados exitosamente (#${currentOrderNumber})!`, 'success');
+      }
+
+      savePatientOrders(orders);
+
+      // Avanzar al siguiente ID consecutivo para la próxima orden
+      currentOrderNumber = generateNextOrderId();
+      document.getElementById('form-order-number-display').innerText = '#' + currentOrderNumber;
+      document.getElementById('rcpt-order-id').innerText = '#' + currentOrderNumber;
+    }
+
+    function getNumericTotal() {
+      const m = parseFloat(document.getElementById('inp-precio-montura').value) || 0;
+      const l = parseFloat(document.getElementById('inp-precio-lentes').value) || 0;
+      const o = parseFloat(document.getElementById('inp-precio-otros').value) || 0;
+      const d = parseFloat(document.getElementById('inp-descuento').value) || 0;
+      return Math.max(0, m + l + o - d);
+    }
+
+    function getNumericSaldo() {
+      const total = getNumericTotal();
+      const abono = parseFloat(document.getElementById('inp-abono').value) || 0;
+      return Math.max(0, total - abono);
+    }
+
+    function sendInvoiceWhatsApp() {
+      const tel = document.getElementById('inp-tel').value.replace(/\D/g, '');
+      const nombre = document.getElementById('inp-nombre').value.trim() || 'Estimado(a) Paciente';
+      const orderId = document.getElementById('rcpt-order-id').innerText;
+      
+      const odEsf = document.getElementById('inp-od-esf').value || '-';
+      const odCil = document.getElementById('inp-od-cil').value || '-';
+      const odEje = document.getElementById('inp-od-eje').value || '-';
+      const odAdd = document.getElementById('inp-od-add').value || '-';
+
+      const oiEsf = document.getElementById('inp-oi-esf').value || '-';
+      const oiCil = document.getElementById('inp-oi-cil').value || '-';
+      const oiEje = document.getElementById('inp-oi-eje').value || '-';
+      const oiAdd = document.getElementById('inp-oi-add').value || '-';
+
+      const montura = document.getElementById('inp-montura').value || 'Sin especificar';
+      const lente = document.getElementById('inp-lente').value || 'Sin especificar';
+      
+      const total = document.getElementById('disp-calc-total').innerText;
+      const abono = formatCurrency(parseFloat(document.getElementById('inp-abono').value) || 0);
+      const saldo = document.getElementById('disp-calc-saldo').innerText;
+
+      const admin = getAdminConfig();
+
+      const mensaje = `Hola *${nombre}*, le compartimos el resumen de su orden en *${admin.nombreOptica}*:
+
+📋 *Orden de Trabajo:* ${orderId}
+📅 *Fecha:* ${document.getElementById('rcpt-fecha').innerText}
+
+🔬 *Fórmula Optométrica:*
+• *OD:* Esf ${odEsf} | Cil ${odCil} | Eje ${odEje} | Add ${odAdd}
+• *OI:* Esf ${oiEsf} | Cil ${oiCil} | Eje ${oiEje} | Add ${oiAdd}
+
+👓 *Montura:* ${montura}
+🔍 *Lentes:* ${lente}
+
+💰 *Total:* ${total}
+💵 *Abono:* ${abono}
+💳 *SALDO PENDIENTE:* *${saldo}*
+
+🩺 *Optómetra:* ${admin.doctor}
+📍 ${admin.direccionTel}
+
+¡Muchas gracias por su confianza!`;
+
+      // Si no tiene teléfono colocado, preguntar o usar el del admin
+      let destino = tel;
+      if (!destino) {
+        showToast('Ingrese un número de WhatsApp para abrir el chat directamente con el paciente.', 'info');
+        destino = prompt("Ingrese el número de WhatsApp del paciente (incluyendo código de país, ej: 573001234567):");
+        if (!destino) return;
+        destino = destino.replace(/\D/g, '');
+      }
+
+      // Si tiene 10 dígitos (Colombia estándar), agregar prefijo 57 si hace falta
+      if (destino.length === 10 && !destino.startsWith('57')) {
+        destino = '57' + destino;
+      }
+
+      const url = `https://api.whatsapp.com/send?phone=${destino}&text=${encodeURIComponent(mensaje)}`;
+      window.open(url, '_blank');
+    }
+
+    function printInvoiceHalfLetter() {
+      // Disparar la impresión nativa
+      window.print();
+    }
+
+    function toggleHistoryModal(open) {
+      const modal = document.getElementById('history-modal');
+      if (open) {
+        renderHistoryList();
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function renderHistoryList(filterText = '') {
+      const container = document.getElementById('history-list-container');
+      const orders = getPatientOrders();
+      const filter = filterText.toLowerCase().trim();
+
+      const filtered = orders.filter(o => {
+        const doc = (o.paciente.doc || '').toLowerCase();
+        const nom = (o.paciente.nombre || '').toLowerCase();
+        const id = (o.id || '').toLowerCase();
+        return doc.includes(filter) || nom.includes(filter) || id.includes(filter);
+      });
+
+      document.getElementById('history-counter-label').innerText = `${filtered.length} órdenes encontradas`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-slate-400">
+            <span class="text-3xl block mb-2">🔍</span>
+            <p class="text-xs">No se encontraron pacientes ni órdenes con "${filterText}".</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
+        <div class="p-3 bg-slate-50 hover:bg-sky-50/50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3 transition">
+          <div class="space-y-0.5">
+            <div class="flex items-center gap-2">
+              <span class="font-mono font-bold text-xs bg-slate-800 text-white px-2 py-0.5 rounded">${item.id}</span>
+              <span class="font-bold text-xs text-slate-900">${item.paciente.nombre}</span>
+              <span class="text-[10px] text-slate-400 font-mono">CC: ${item.paciente.doc}</span>
+            </div>
+            <div class="text-[11px] text-slate-600 flex flex-wrap gap-x-3">
+              <span>📅 ${item.fecha}</span>
+              <span>👓 ${item.productos.montura || 'Sin montura'}</span>
+              <span>Total: <b>${formatCurrency(item.precios.total)}</b></span>
+              <span class="${item.precios.saldo > 0 ? 'text-rose-600 font-bold' : 'text-emerald-600 font-semibold'}">
+                Saldo: ${formatCurrency(item.precios.saldo)}
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="loadOrderIntoForm('${item.id}')" class="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg text-xs flex items-center gap-1 shadow-sm">
+              Cargar
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterHistoryList(val) {
+      renderHistoryList(val);
+    }
+
+    function updateOrdersCountBadge() {
+      const orders = getPatientOrders();
+      document.getElementById('badge-total-orders').innerText = orders.length;
+    }
+
+    function loadOrderIntoForm(orderId) {
+      const orders = getPatientOrders();
+      const item = orders.find(o => o.id === orderId);
+      if (!item) return;
+
+      currentOrderNumber = item.id;
+      document.getElementById('form-order-number-display').innerText = '#' + item.id;
+      document.getElementById('rcpt-order-id').innerText = '#' + item.id;
+
+      // Paciente
+      document.getElementById('inp-doc').value = item.paciente.doc || '';
+      document.getElementById('inp-nombre').value = item.paciente.nombre || '';
+      document.getElementById('inp-tel').value = item.paciente.tel || '';
+      document.getElementById('inp-edad').value = item.paciente.edad || '';
+      document.getElementById('inp-fecha').value = item.fecha || '';
+
+      // Fórmula
+      document.getElementById('inp-od-esf').value = item.formula.od.esf || '';
+      document.getElementById('inp-od-cil').value = item.formula.od.cil || '';
+      document.getElementById('inp-od-eje').value = item.formula.od.eje || '';
+      document.getElementById('inp-od-add').value = item.formula.od.add || '';
+      document.getElementById('inp-od-dp').value = item.formula.od.dp || '';
+
+      document.getElementById('inp-oi-esf').value = item.formula.oi.esf || '';
+      document.getElementById('inp-oi-cil').value = item.formula.oi.cil || '';
+      document.getElementById('inp-oi-eje').value = item.formula.oi.eje || '';
+      document.getElementById('inp-oi-add').value = item.formula.oi.add || '';
+      document.getElementById('inp-oi-dp').value = item.formula.oi.dp || '';
+
+      document.getElementById('inp-dp-total').value = item.formula.dpTotal || '';
+      if (item.formula.uso) document.getElementById('inp-uso').value = item.formula.uso;
+
+      // Productos
+      document.getElementById('inp-montura').value = item.productos.montura || '';
+      document.getElementById('inp-lente').value = item.productos.lente || '';
+      document.getElementById('inp-obs').value = item.productos.obs || '';
+
+      // Precios
+      document.getElementById('inp-precio-montura').value = item.precios.montura || 0;
+      document.getElementById('inp-precio-lentes').value = item.precios.lentes || 0;
+      document.getElementById('inp-precio-otros').value = item.precios.otros || 0;
+      document.getElementById('inp-descuento').value = item.precios.descuento || 0;
+      document.getElementById('inp-abono').value = item.precios.abono || 0;
+      if (item.precios.metodoPago) document.getElementById('inp-metodo-pago').value = item.precios.metodoPago;
+
+      syncToReceipt();
+      toggleHistoryModal(false);
+      showToast(`Orden ${orderId} cargada en pantalla lista para editar o imprimir.`, 'info');
+    }
+
+    function handleDocInput(docValue) {
+      if (!docValue) return;
+      const clean = docValue.trim();
+      const orders = getPatientOrders();
+      // Buscar si el paciente ya tiene historial
+      const prev = orders.slice().reverse().find(o => o.paciente.doc === clean);
+      if (prev && !document.getElementById('inp-nombre').value) {
+        document.getElementById('inp-nombre').value = prev.paciente.nombre || '';
+        document.getElementById('inp-tel').value = prev.paciente.tel || '';
+        document.getElementById('inp-edad').value = prev.paciente.edad || '';
+        showToast(`Paciente recurrente encontrado: ${prev.paciente.nombre}`, 'info');
+      }
+    }
+
+    function quickPatientSearchPrompt() {
+      const doc = prompt("Ingrese la Cédula/Documento del paciente:");
+      if (!doc) return;
+      const orders = getPatientOrders();
+      const matches = orders.filter(o => o.paciente.doc === doc.trim());
+      if (matches.length > 0) {
+        loadOrderIntoForm(matches[matches.length - 1].id);
+      } else {
+        document.getElementById('inp-doc').value = doc.trim();
+        syncToReceipt();
+        showToast('Documento no registrado aún. Puede ingresar los datos nuevos.', 'info');
+      }
+    }
+
+    function resetFormToNewOrder() {
+      currentOrderNumber = generateNextOrderId();
+      document.getElementById('form-order-number-display').innerText = '#' + currentOrderNumber;
+      document.getElementById('rcpt-order-id').innerText = '#' + currentOrderNumber;
+
+      // Limpiar campos
+      document.getElementById('inp-doc').value = '';
+      document.getElementById('inp-nombre').value = '';
+      document.getElementById('inp-tel').value = '';
+      document.getElementById('inp-edad').value = '';
+      document.getElementById('inp-fecha').value = new Date().toISOString().split('T')[0];
+
+      document.getElementById('inp-od-esf').value = '';
+      document.getElementById('inp-od-cil').value = '';
+      document.getElementById('inp-od-eje').value = '';
+      document.getElementById('inp-od-add').value = '';
+      document.getElementById('inp-od-dp').value = '';
+
+      document.getElementById('inp-oi-esf').value = '';
+      document.getElementById('inp-oi-cil').value = '';
+      document.getElementById('inp-oi-eje').value = '';
+      document.getElementById('inp-oi-add').value = '';
+      document.getElementById('inp-oi-dp').value = '';
+
+      document.getElementById('inp-dp-total').value = '';
+      document.getElementById('inp-montura').value = '';
+      document.getElementById('inp-lente').value = '';
+      document.getElementById('inp-obs').value = '';
+
+      document.getElementById('inp-precio-montura').value = '0';
+      document.getElementById('inp-precio-lentes').value = '0';
+      document.getElementById('inp-precio-otros').value = '0';
+      document.getElementById('inp-descuento').value = '0';
+      document.getElementById('inp-abono').value = '0';
+
+      syncToReceipt();
+      showToast('Formulario limpio listo para nueva orden.', 'info');
+    }
+
+    function loadSampleCase(num, notify = true) {
+      const orders = getPatientOrders();
+      if (orders.length >= num) {
+        loadOrderIntoForm(orders[num - 1].id);
+        if (notify) showToast(`Cargado caso demo #${num}`, 'info');
+      }
+    }
+
+    function openDoctorModal() {
+      const cfg = getAdminConfig();
+      document.getElementById('adm-clinic-name').value = cfg.nombreOptica;
+      document.getElementById('adm-clinic-doc').value = cfg.nit;
+      document.getElementById('adm-doctor-name').value = cfg.doctor;
+      document.getElementById('adm-clinic-contact').value = cfg.direccionTel;
+      document.getElementById('adm-whatsapp-code').value = cfg.telefonoWhatsApp;
+
+      document.getElementById('admin-modal').classList.remove('hidden');
+    }
+
+    function closeDoctorModal() {
+      document.getElementById('admin-modal').classList.add('hidden');
+    }
+
+    function saveDoctorSettings() {
+      const updated = {
+        nombreOptica: document.getElementById('adm-clinic-name').value.trim() || DEFAULT_ADMIN.nombreOptica,
+        nit: document.getElementById('adm-clinic-doc').value.trim() || DEFAULT_ADMIN.nit,
+        doctor: document.getElementById('adm-doctor-name').value.trim() || DEFAULT_ADMIN.doctor,
+        direccionTel: document.getElementById('adm-clinic-contact').value.trim() || DEFAULT_ADMIN.direccionTel,
+        telefonoWhatsApp: document.getElementById('adm-whatsapp-code').value.trim() || DEFAULT_ADMIN.telefonoWhatsApp
+      };
+
+      localStorage.setItem('optica_admin_config', JSON.stringify(updated));
+      applyDoctorSettingsToUI();
+      closeDoctorModal();
+      showToast('Datos del consultorio actualizados con éxito.', 'success');
+    }
+
+    function applyDoctorSettingsToUI() {
+      const cfg = getAdminConfig();
+      document.getElementById('header-doctor-name').innerText = cfg.doctor.split('-')[0].trim();
+      document.getElementById('rcpt-clinic-name').innerText = cfg.nombreOptica;
+      document.getElementById('rcpt-clinic-doc').innerText = cfg.nit;
+      document.getElementById('rcpt-clinic-doctor').innerText = cfg.doctor;
+      document.getElementById('rcpt-clinic-address').innerText = cfg.direccionTel;
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const bgColors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-slate-900 text-white'
+      };
+
+      const icons = {
+        success: '✓',
+        error: '✕',
+        info: 'ℹ'
+      };
+
+      toast.className = `${bgColors[type] || bgColors.info} shadow-xl rounded-xl p-3 text-xs flex items-center gap-2 transition-all transform duration-300 translate-y-2 opacity-0 pointer-events-auto border border-white/10`;
+      toast.innerHTML = `
+        <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center font-bold text-[10px] shrink-0">${icons[type] || '•'}</span>
+        <span class="flex-1 font-medium">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      // Animación de entrada
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      // Remoción automática
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Inicializar aplicación al cargar DOM
+    window.addEventListener('DOMContentLoaded', initializeApp);
+  </script>
+</body>
+</html>
